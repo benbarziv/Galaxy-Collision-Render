@@ -1,0 +1,593 @@
+/*
+ * Instrument-overlay UI.
+ *
+ * The goal is a control panel that reads as an instrument laid over the
+ * simulation rather than a web page: translucent, dark, with a backdrop blur
+ * so the stars behind it stay visible. Everything is rem-based, and the panel
+ * collapses to a bottom sheet on narrow viewports.
+ */
+
+:root {
+  --bg: #04060c;
+  --panel: rgba(10, 14, 24, 0.72);
+  --panel-solid: #0a0e18;
+  --border: rgba(140, 170, 220, 0.14);
+  --text: #d8e2f2;
+  --dim: #8494ac;
+  --accent: #6ea8ff;
+  --accent-warm: #ffb267;
+  --radius: 10px;
+  --font: ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: grab;
+}
+
+#stage:active {
+  cursor: grabbing;
+}
+
+/* ---- Floating control panel ------------------------------------------- */
+
+.ui {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  width: 20rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  z-index: 10;
+  /* Slide out rather than disappear, so H feels like a transition. */
+  transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1), opacity 200ms ease;
+}
+
+.ui.hidden {
+  transform: translateX(calc(-100% - 1.5rem));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ui::-webkit-scrollbar {
+  width: 6px;
+}
+.ui::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.titlebar {
+  position: relative;
+  padding-bottom: 0.15rem;
+}
+
+.titlebar h1 {
+  margin: 0;
+  font-size: 0.94rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.titlebar .subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.7rem;
+  color: var(--dim);
+  font-family: var(--mono);
+}
+
+.icon-button {
+  position: absolute;
+  top: -0.15rem;
+  right: -0.15rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--dim);
+  cursor: pointer;
+  transition: color 140ms, background 140ms;
+}
+
+.icon-button:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--border);
+}
+
+.panel:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.row label,
+.panel > label {
+  font-size: 0.76rem;
+  color: var(--dim);
+  letter-spacing: 0.01em;
+}
+
+.value {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.blurb {
+  margin: 0.1rem 0 0;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--dim);
+}
+
+details summary {
+  font-size: 0.72rem;
+  color: var(--accent);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+details summary::before {
+  content: "▸ ";
+}
+
+details[open] summary::before {
+  content: "▾ ";
+}
+
+details p {
+  margin: 0.4rem 0 0;
+  font-size: 0.73rem;
+  line-height: 1.5;
+  color: var(--dim);
+}
+
+/* ---- Form controls ------------------------------------------------------ */
+
+select,
+input[type="range"],
+button {
+  font-family: inherit;
+  font-size: 0.78rem;
+}
+
+select {
+  width: 100%;
+  padding: 0.42rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  cursor: pointer;
+}
+
+select:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+select option {
+  background: var(--panel-solid);
+  color: var(--text);
+}
+
+input[type="range"] {
+  width: 100%;
+  height: 1.1rem;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(140, 170, 220, 0.22);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4.5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(110, 168, 255, 0.55);
+  transition: transform 120ms;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.18);
+}
+
+input[type="range"]::-moz-range-track {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(140, 170, 220, 0.22);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.toggles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem 0.6rem;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.74rem;
+  color: var(--dim);
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 28px;
+  height: 16px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(140, 170, 220, 0.2);
+  position: relative;
+  cursor: pointer;
+  transition: background 160ms;
+}
+
+.toggle input::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #cbd6e8;
+  transition: transform 160ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggle input:checked {
+  background: rgba(110, 168, 255, 0.5);
+}
+
+.toggle input:checked::after {
+  transform: translateX(12px);
+  background: #fff;
+}
+
+.buttons {
+  flex-direction: row;
+  gap: 0.5rem;
+}
+
+.buttons button {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 140ms, border-color 140ms;
+}
+
+.buttons button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(140, 170, 220, 0.3);
+}
+
+.buttons .primary {
+  background: rgba(110, 168, 255, 0.18);
+  border-color: rgba(110, 168, 255, 0.4);
+}
+
+.buttons .primary:hover {
+  background: rgba(110, 168, 255, 0.28);
+}
+
+/* ---- Diagnostics readout ------------------------------------------------ */
+
+.stats {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  pointer-events: none;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.16rem 0.9rem;
+}
+
+.stats .k {
+  color: var(--dim);
+}
+
+.stats .v {
+  color: var(--text);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Hints, boot veil, fatal errors ------------------------------------- */
+
+.hint {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  font-size: 0.7rem;
+  color: var(--dim);
+  background: rgba(8, 11, 20, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  pointer-events: none;
+  transition: opacity 400ms ease;
+}
+
+.hint.faded {
+  opacity: 0;
+}
+
+kbd {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  transition: opacity 500ms ease;
+}
+
+.boot.gone {
+  opacity: 0;
+  pointer-events: none;
+  /*
+   * `visibility: hidden` once the fade has finished, so the overlay stops
+   * being painted at all. Opacity alone leaves the spinner composited over the
+   * finished scene: a fully transparent element still renders, and the spinner
+   * sits at the exact centre of the frame where the galactic cores are. That
+   * makes it read as a bright central core in every screenshot, which is
+   * enough to make an entirely black canvas look like a working render.
+   */
+  visibility: hidden;
+  transition: opacity 500ms ease, visibility 0s linear 500ms;
+}
+
+.boot-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.boot p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--dim);
+  letter-spacing: 0.04em;
+}
+
+.boot-spinner {
+  width: 26px;
+  height: 26px;
+  border: 2px solid rgba(140, 170, 220, 0.18);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fatal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: var(--bg);
+}
+
+/*
+ * The `hidden` attribute is only a UA default of `display: none`, and it lives
+ * in the user-agent stylesheet, so *any* author `display` rule for the same
+ * element outranks it. Setting `display: grid` above is therefore enough to make
+ * `hidden` stop working, and the error panel then covers a perfectly healthy
+ * running app for the whole session -- the "Unable to start" screen, with an
+ * empty message box, on a simulation that never failed.
+ *
+ * This restores the attribute's intent explicitly. `[hidden]` rather than
+ * `.fatal[hidden]` so it covers any element that opts into hiding this way.
+ */
+[hidden] {
+  display: none !important;
+}
+
+.fatal-inner {
+  max-width: 46rem;
+}
+
+.fatal h1 {
+  margin: 0 0 0.8rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #ff8a8a;
+}
+
+.fatal pre {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  max-height: 70vh;
+  overflow: auto;
+}
+
+/* Re-open handle, shown only while the panel is hidden. */
+.ui-restore {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 20;
+  width: 2.1rem;
+  height: 2.1rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--dim);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 240ms ease, color 140ms;
+}
+
+.ui-restore.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ui-restore:hover {
+  color: var(--text);
+}
+
+/* ---- Narrow viewports: panel becomes a bottom sheet --------------------- */
+
+@media (max-width: 640px) {
+  .ui {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-height: 62vh;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .ui.hidden {
+    transform: translateY(100%);
+  }
+
+  .stats {
+    top: auto;
+    bottom: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .hint {
+    display: none;
+  }
+}
+
+/* Respect the OS reduced-motion preference: the camera inertia and the panel
+   slide are the only animations, and both are non-essential. */
+@media (prefers-reduced-motion: reduce) {
+  .ui,
+  .hint,
+  .boot {
+    transition: none;
+  }
+  .boot-spinner {
+    animation: none;
+  }
+}
+
+
+

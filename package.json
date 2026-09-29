@@ -1,0 +1,24 @@
+{
+  "name": "galaxy-collision-simulator",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Real-time GPU-accelerated galaxy collision simulator using Particle-Mesh N-body dynamics",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm run test:ic && npm run startup && npm run physics && node scripts/scenarios-check.mjs && node scripts/verify.mjs",
+    "test:ic": "vite-node scripts/initial-conditions.test.mjs",
+    "startup": "node scripts/startup.mjs",
+    "physics": "node scripts/physics.mjs",
+    "presets": "node scripts/scenarios-check.mjs"
+  },
+  "devDependencies": {
+    "puppeteer": "^25.12.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vite-node": "^3.2.4"
+  }
+}

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Galaxy Collision Simulator</title>
+    <meta name="description" content="Real-time GPU-accelerated simulation of colliding spiral galaxies." />
+    <link rel="stylesheet" href="/src/ui/styles.css" />
+  </head>
+  <body>
+    <canvas id="stage" aria-label="Galaxy collision simulation viewport"></canvas>
+
+    <div id="fatal" class="fatal" hidden>
+      <div class="fatal-inner">
+        <h1>Unable to start</h1>
+        <pre id="fatal-message"></pre>
+      </div>
+    </div>
+
+    <div id="boot" class="boot">
+      <div class="boot-inner">
+        <div class="boot-spinner"></div>
+        <p>Initialising simulation</p>
+      </div>
+    </div>
+
+    <main id="ui" class="ui">
+      <header class="titlebar">
+        <h1>Galaxy Collision Simulator</h1>
+        <p class="subtitle">Particle-Mesh N-body &middot; WebGL2</p>
+        <button id="collapse" class="icon-button" aria-label="Hide interface" title="Hide interface (H)">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+            <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </header>
+
+      <section class="panel">
+        <div class="row">
+          <label for="preset">Scenario</label>
+        </div>
+        <select id="preset"></select>
+        <p id="preset-blurb" class="blurb"></p>
+        <details id="preset-details">
+          <summary>What to look for</summary>
+          <p id="preset-description"></p>
+        </details>
+      </section>
+
+      <section class="panel">
+        <div class="row">
+          <label for="speed">Speed</label>
+          <output id="speed-value" class="value">1.0x</output>
+        </div>
+        <input id="speed" type="range" min="0" max="100" value="50" />
+        <div class="row">
+          <label for="quality">Quality</label>
+          <output id="quality-value" class="value"></output>
+        </div>
+        <input id="quality" type="range" min="0" max="3" step="1" value="2" />
+      </section>
+
+      <section class="panel">
+        <div class="row">
+          <label for="star-size">Star size</label>
+          <output id="star-size-value" class="value">1.0x</output>
+        </div>
+        <input id="star-size" type="range" min="40" max="220" value="100" />
+        <div class="row">
+          <label for="exposure">Exposure</label>
+          <output id="exposure-value" class="value">1.0x</output>
+        </div>
+        <input id="exposure" type="range" min="30" max="220" value="100" />
+        <div class="row">
+          <label for="trail-length">Trail length</label>
+          <output id="trail-value" class="value">medium</output>
+        </div>
+        <input id="trail-length" type="range" min="0" max="40" value="12" />
+      </section>
+
+      <section class="panel toggles">
+        <label class="toggle"><input id="toggle-trails" type="checkbox" checked /><span>Trails</span></label>
+        <label class="toggle"><input id="toggle-bloom" type="checkbox" checked /><span>Bloom</span></label>
+        <label class="toggle"><input id="toggle-starfield" type="checkbox" checked /><span>Starfield</span></label>
+        <label class="toggle"><input id="toggle-follow" type="checkbox" checked /><span>Camera follow</span></label>
+        <label class="toggle"><input id="toggle-stats" type="checkbox" /><span>Diagnostics</span></label>
+      </section>
+
+      <section class="panel buttons">
+        <button id="playpause" class="primary">Pause</button>
+        <button id="reset">Reset</button>
+      </section>
+    </main>
+
+    <aside id="stats" class="stats" hidden>
+      <div class="stats-grid">
+        <span class="k">Simulated time</span><span class="v" id="s-time">0 Myr</span>
+        <span class="k">Frame rate</span><span class="v" id="s-fps">0</span>
+        <span class="k">Particles</span><span class="v" id="s-particles">0</span>
+        <span class="k">Substeps / frame</span><span class="v" id="s-substeps">0</span>
+        <span class="k">Step time</span><span class="v" id="s-steptime">0.00 ms</span>
+        <span class="k">PM grid</span><span class="v" id="s-grid">-</span>
+        <span class="k">Separation</span><span class="v" id="s-separation">-</span>
+        <span class="k">Relative velocity</span><span class="v" id="s-relvel">-</span>
+        <span class="k">Escaped stars</span><span class="v" id="s-escaped">0%</span>
+        <span class="k">Draw calls</span><span class="v" id="s-draws">0</span>
+      </div>
+    </aside>
+
+    <div id="hint" class="hint">
+      <kbd>drag</kbd> orbit &middot; <kbd>scroll</kbd> zoom &middot; <kbd>space</kbd> pause &middot; <kbd>H</kbd> hide UI
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
